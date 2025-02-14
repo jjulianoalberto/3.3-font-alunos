@@ -38,3 +38,18 @@ export interface IAssessmentPayload {
   discipline: string;
   grade: number;
 }
+export interface IAssessmentDelete {
+  studentId: string;
+  assessmentId: string;
+  token?: string;
+}
+
+export interface IAssessmentUpdate {
+  id: string;
+  discipline: string;
+  grade: number;
+  studentId: string;
+  token: string;
+}
+
+export type TAssessmentPayload = Omit<IAssessment, "idStudent">;

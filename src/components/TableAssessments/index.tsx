@@ -1,5 +1,5 @@
-import { ChangeEvent, MouseEvent } from "react";
-import { Delete, Edit } from "@mui/icons-material";
+import { ChangeEvent, MouseEvent, useState } from "react";
+import { Delete, Edit, Save } from "@mui/icons-material";
 import {
   IconButton,
   Paper,
@@ -11,6 +11,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TextField,
 } from "@mui/material";
 
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -18,9 +19,19 @@ import {
   changePage,
   changeRowsPerPage,
 } from "../../store/slices/paginationSlice";
+import {
+  deleteAssessmentThunk,
+  updateAssessmentThunk,
+} from "../../store/slices/assessmentsSlice";
+import { IAssessment } from "../../types";
 
 export function TableAssessments() {
   const dispatch = useAppDispatch();
+
+  const [editingAssessment, setEditingAssessment] =
+    useState<IAssessment | null>(null);
+
+  const [formData, setFormData] = useState({ discipline: "", grade: 0 });
 
   const assessments = useAppSelector((state) => state.assessments);
   const pagination = useAppSelector((state) => state.pagination);
@@ -37,6 +48,45 @@ export function TableAssessments() {
     page: number
   ) {
     dispatch(changePage(page + 1));
+  }
+
+  function handleDelete(id: string) {
+    dispatch(deleteAssessmentThunk(id));
+  }
+
+  // Função que lida com as mudanças dos campos
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  }
+
+  // Clicou no botão de editar, seta no estado local a avalição
+  function handleEdit(assessment: IAssessment) {
+    setEditingAssessment(assessment);
+
+    // Atualiza o estado do formulário para refletir nos campos os dados da avaliação
+    setFormData({
+      discipline: assessment.discipline,
+      grade: assessment.grade,
+    });
+  }
+
+  // Função para salvar a edição da avaliação
+  function handleSave(assessment: IAssessment) {
+    if (formData.discipline && formData.grade) {
+      dispatch(
+        updateAssessmentThunk({
+          id: assessment.id,
+          grade: Number(formData.grade),
+          discipline: formData.discipline,
+        })
+      );
+    }
+
+    setEditingAssessment(null); // Reset após salvar
   }
 
   return (
@@ -60,14 +110,41 @@ export function TableAssessments() {
             .map((assessment) => (
               <TableRow key={assessment.id}>
                 <TableCell>{assessment.id}</TableCell>
-                <TableCell>{assessment.discipline}</TableCell>
-                <TableCell>{assessment.grade}</TableCell>
                 <TableCell>
-                  <IconButton>
-                    <Edit color="primary" />
-                  </IconButton>
+                  {editingAssessment?.id === assessment.id ? (
+                    <TextField
+                      name="discipline"
+                      value={formData.discipline}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    assessment.discipline
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingAssessment?.id === assessment.id ? (
+                    <TextField
+                      name="grade"
+                      value={formData.grade}
+                      onChange={handleChange}
+                      type="number"
+                    />
+                  ) : (
+                    assessment.grade
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingAssessment?.id === assessment.id ? (
+                    <IconButton onClick={() => handleSave(assessment)}>
+                      <Save color="success" />
+                    </IconButton>
+                  ) : (
+                    <IconButton onClick={() => handleEdit(assessment)}>
+                      <Edit color="primary" />
+                    </IconButton>
+                  )}
 
-                  <IconButton>
+                  <IconButton onClick={() => handleDelete(assessment.id)}>
                     <Delete color="error" />
                   </IconButton>
                 </TableCell>
